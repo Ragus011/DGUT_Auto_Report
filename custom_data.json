@@ -1,4 +1,5 @@
 {
     "body_temperature": 36.6,
-    "health_situation": 1
+    "health_situation": 1,
+    "is_in_school": 1
 }

@@ -1,22 +1,27 @@
 import json
 import os
+
 from gevent import monkey;monkey.patch_all()
-import click
-from dgut_requests import DgutIllness, requests
-from retry import retry
 import gevent
+import click
+import requests
+from dgut_requests import DgutIllness
+from retry import retry
 
 
 CUSTOM_DATA_FILENAME = "custom_data.json"
 DEFAULT_CUSTOM_DATA = {
     "body_temperature": 36.5,
-    "health_situation": 1
+    "health_situation": 1,
+    "is_in_school": 1
 }
 
+
 def get_custom_data(filename: str) -> dict:
-    """获取配置信息
-    :param filename(str): 配置文件名
-    :return: dict，配置
+    """
+    获取配置信息
+    :param filename: 配置文件名
+    :return: dict
     """
     # 文件不存在，返回默认配置
     if not os.path.exists(filename):
@@ -32,14 +37,15 @@ def get_custom_data(filename: str) -> dict:
     return config
 
 
-@retry(tries=50, delay=2, backoff=2, max_delay=30)
-def clock(u: DgutIllness, custom_data: dict=None, key: str=None) -> None:
-    '''打卡并输出结果
-    :param u(DgutIllness): 指定打卡的DgutIllness对象
-    :param custom_data(dict): 用户自定义数据
-    :param key(str | None): 指定Server酱的key
-    :returns: None，打印结果
-    '''
+@retry(tries=20, delay=2, backoff=3, max_delay=60)
+def clock(u: DgutIllness, custom_data: dict = None, key: str = None) -> None:
+    """
+    打卡并输出结果
+    :param u: 指定打卡的DgutIllness对象
+    :param custom_data: 用户自定义数据
+    :param key: 指定Server酱的key
+    :return: None
+    """
     result = u.report(custom_data=custom_data, priority=True).get("message")
     print(u.username[-4:], '-', result) 
     if key and not "今日已打卡" in result:
@@ -60,13 +66,12 @@ def clock(u: DgutIllness, custom_data: dict=None, key: str=None) -> None:
 @click.option('-K', '--key', help="server酱的key值", type=str)
 def main(username: str, password: str, key: str) -> None:
     """主函数，封装成终端命令
-    :param username(str): 用户名
-    :param password(str): 密码
-    :param key(str): Server酱key
+    :param username: 用户名
+    :param password: 密码
+    :param key: Server酱key
     :return: None
     """
     custom_data = get_custom_data(CUSTOM_DATA_FILENAME)
-    print(custom_data)
     users = username.split(",")
     pwds = password.split(",")
     if key:
